@@ -73,14 +73,16 @@
         const mapTexts = ["新加坡動物園遇見狐猴 超萌！", "環球奇怪自拍", "新加坡合照 兄弟手氣爆棚", "......", "內衣大盜", "第一次一起滑雪，好玩！", "成為薯粉", "被小南寵幸", "一起堆的雪地小白", "這張純粹刷到 很好笑哈"];
 
         const eventPhotos = {
-            mini: "e1.jpeg",    // 假冒寸神 -
-            tired: "e2.jpeg",   // 累累病 -
-            scratch: "e3.jpeg", // 抓背 -
-            pokemon: "e4.jpeg", // 抓寶 -
-            nuo: "e5.jpeg",     // 小諾 -
-            racing: "e6.jpeg",  // 飆車 - 
-            ceng: "e7.jpeg"     // 蹭子 -
+            mini: "e1.jpeg",    
+            tired: "e2.jpeg",   
+            scratch: "e3.jpeg", 
+            pokemon: "e4.jpeg", 
+            nuo: "e5.jpeg",     
+            racing: "e6.jpeg",  
+            ceng: "e7.jpeg"     
         };
+
+        const rankNames = { 4: "小寸子", 6: "寸植", 10: "大植", 15: "實習寸神" };
 
         // --- 2. 遊戲核心變數 ---
         let players = [
@@ -164,176 +166,117 @@
             if(triggerLanding) handleLanding(p);
         }
 
-        function handleLanding(p) {
+        async function handleLanding(p) {
             const type = layout[p.pos];
             if(type === 'U') {
-                upgradeLogic(p, "升植！").then(win => { if(!win) nextTurn(); });
+                const win = await upgradeLogic(p, "升植！");
+                if(!win) nextTurn();
             } else if(type === 'S') {
                 triggerRandomEvent(p);
             } else if(document.getElementsByClassName('cell')[p.pos].dataset.mIdx !== undefined) {
                 const idx = document.getElementsByClassName('cell')[p.pos].dataset.mIdx;
                 showModal("我們一起...", mapPhotos[idx], mapTexts[idx]);
-                document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
+                document.getElementById('close-btn').onclick = () => { 
+                    document.getElementById('modal').style.display = 'none'; 
+                    nextTurn(); 
+                };
             } else {
                 nextTurn();
             }
         }
 
-        // --- 4. 隨機事件邏輯 (含照片) ---
+        // --- 4. 隨機事件邏輯 ---
         function triggerRandomEvent(p) {
             const events = [
                 {
-                    f: () => {
+                    f: async () => {
                         p.skipTurns = 2;
                         showModal("假冒寸神，被貶為迷你寸", eventPhotos.mini, "下兩回合不能擲骰子：社區服務中...");
+                        return false;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         p.fixedSteps = 3;
                         showModal("累累病發作", eventPhotos.tired, "下三回合只能走一步。");
+                        return false;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         const opp = players[1 - currentPlayerIdx];
                         showModal("提供抓背服務", eventPhotos.scratch, "自己升級，對方前進三格！");
-                        upgradeLogic(p, "抓背獎勵");
-                        movePlayer(opp, 3, false);
+                        await upgradeLogic(p, "抓背獎勵");
+                        await movePlayer(opp, 3, false);
+                        return false;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         p.reverseNext = true;
                         showModal("沈迷抓寶迷路了", eventPhotos.pokemon, "下回合自己往後走。");
+                        return false;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         showModal("被小諾騷擾耽誤", eventPhotos.nuo, "往後退 3 格。");
-                        setTimeout(() => movePlayer(p, -3, true), 800);
+                        document.getElementById('close-btn').onclick = async () => {
+                            document.getElementById('modal').style.display = 'none';
+                            await movePlayer(p, -3, true);
+                        };
                         return true;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         showModal("飆車！", eventPhotos.racing, "兩人一起前進 4 格！");
-                        movePlayer(players[0], 4, false);
-                        movePlayer(players[1], 4, false);
+                        await movePlayer(players[0], 4, false);
+                        await movePlayer(players[1], 4, false);
+                        return false;
                     }
                 },
                 {
-                    f: () => {
+                    f: async () => {
                         showModal("和蹭子玩", eventPhotos.ceng, "什麼事都沒發生，但很可愛。");
+                        return false;
                     }
                 }
             ];
 
             const ev = events[Math.floor(Math.random() * events.length)];
-            const isAsync = ev.f();
-            document.getElementById('close-btn').onclick = () => {
-                document.getElementById('modal').style.display = 'none';
-                if(!isAsync) nextTurn();
-            };
+            ev.f().then(isInternalHandled => {
+                if(!isInternalHandled) {
+                    document.getElementById('close-btn').onclick = () => {
+                        document.getElementById('modal').style.display = 'none';
+                        nextTurn();
+                    };
+                }
+            });
         }
 
         // --- 5. 升降級與 UI ---
-        // 建立一個階級對照表
-        const rankNames = {
-            4: "小寸子",
-            6: "寸植",
-            10: "大植",
-            15: "實習寸神"
-        };
-
         async function upgradeLogic(p, reason) {
-            // 如果已經是實習寸神，再次升級就勝利
             if(p.dice === 15) { victory(p); return true; }
-            
             const nextLv = { 4: 6, 6: 10, 10: 15 };
             p.dice = nextLv[p.dice];
-            const newRank = rankNames[p.dice];
-            
             updateUI();
-            
-            // 顯示升級文字
-            showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${newRank}】\n(骰子進化為 D${p.dice})`);
-            
-            document.getElementById('close-btn').onclick = () => {
-                document.getElementById('modal').style.display = 'none';
-            };
-            return false;
+            showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${rankNames[p.dice]}】\n(骰子進化為 D${p.dice})`);
+            return new Promise(resolve => {
+                const originalOnclick = document.getElementById('close-btn').onclick;
+                document.getElementById('close-btn').onclick = () => {
+                    document.getElementById('modal').style.display = 'none';
+                    resolve(false);
+                };
+            });
         }
 
         async function downgradeLogic(p) {
-            // 如果已經是最低階，就不再降級
             if(p.dice === 4) return;
-            
             const prevLv = { 15: 10, 10: 6, 6: 4 };
             p.dice = prevLv[p.dice];
-            const newRank = rankNames[p.dice];
-            
             updateUI();
-            
-            // 降級通常伴隨隨機事件，顯示提示讓玩家知道慘了
-            showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${newRank}】\n(骰子退化為 D${p.dice})`);
-            
-            document.getElementById('close-btn').onclick = () => {
-                document.getElementById('modal').style.display = 'none';
-            };
-        }
-
-        function nextTurn() {
-            isMoving = false;
-            currentPlayerIdx = 1 - currentPlayerIdx;
-            updateUI();
-        }
-
-        function updateUI() {
-            players.forEach((p, i) => {
-                const tag = document.getElementById(p.tag);
-                const rank = rankNames[p.dice]; // 取得稱號
-                tag.innerText = `P${p.id}: ${rank} (D${p.dice})`;
-                tag.classList.toggle('active', i === currentPlayerIdx);
-                document.getElementById(`p${p.id}-status`).innerHTML = 
-                    p.skipTurns > 0 ? `<span class="status-badge">社區服務</span>` : 
-                    (p.fixedSteps > 0 ? `<span class="status-badge">累累病</span>` : "");
-                document.getElementById(p.token).classList.toggle('mini', p.skipTurns > 0);
-            });
-            document.getElementById('status-bar').innerText = `輪到 玩家 ${players[currentPlayerIdx].id}`;
-        }
-
-        function updateTokens() {
-            players.forEach(p => {
-                const cell = document.getElementsByClassName('cell')[p.pos];
-                const boardRect = document.getElementById('game-container').getBoundingClientRect();
-                const rect = cell.getBoundingClientRect();
-                const el = document.getElementById(p.token);
-                const offset = p.id === 1 ? -6 : 6;
-                el.style.left = (rect.left - boardRect.left + rect.width/2 - 16 + offset) + 'px';
-                el.style.top = (rect.top - boardRect.top + rect.height/2 - 16 + offset) + 'px';
-            });
-        }
-
-        function showModal(t, img, txt) {
-            document.getElementById('modal-title').innerText = t;
-            const imgEl = document.getElementById('modal-img');
-            if(img) { imgEl.src = img; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; }
-            document.getElementById('modal-text').innerText = txt;
-            document.getElementById('modal').style.display = 'flex';
-        }
-
-        function victory(p) {
-            confetti({ particleCount: 300, spread: 150, origin: { y: 0.6 } });
-            showModal("🎊 終極大驚喜 🎊", "", `玩家 ${p.id} 成為無所不能的寸神！\n希望你玩得開心，生日快樂！💖`);
-            document.getElementById('dice-btn').style.pointerEvents = 'none';
-            document.getElementById('close-btn').innerText = "再玩一次";
-            document.getElementById('close-btn').onclick = () => location.reload();
-        }
-
-        document.getElementById('reset-btn').onclick = () => { if(confirm("確定重啟？")) location.reload(); };
-        initBoard();
-        window.onresize = updateTokens;
-    </script>
-</body>
-</html>
+            showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${rankNames[p.dice]}】\n(骰子退化為 D${p.dice})`);
+            return new Promise(resolve => {
+                document.getElementById('close-btn').onclick = () => {
+                    document.getElementById('modal
