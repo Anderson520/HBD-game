@@ -93,7 +93,7 @@
         let isMoving = false;
         const totalCells = 20;
         const layout = ['Start','M','S','M','M','S','U','M','S','M','S','M','M','S','U','M','S','M','S','M'];
-        const gridMap = [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[5,1],[4,1],[3,1],[2,1]];
+        const gridMap = [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,3],[6,2],[6,1],[5,1],[4,1],[3,1],[2,1]];
 
         function initBoard() {
             const boardEl = document.getElementById('board');
@@ -169,7 +169,7 @@
         async function handleLanding(p) {
             const type = layout[p.pos];
             if(type === 'U') {
-                const win = await upgradeLogic(p, "升植！");
+                const win = await upgradeLogic(p, "踩到升級格！");
                 if(!win) nextTurn();
             } else if(type === 'S') {
                 triggerRandomEvent(p);
@@ -185,37 +185,40 @@
             }
         }
 
-        // --- 4. 隨機事件邏輯 ---
-        function triggerRandomEvent(p) {
+        // --- 4. 隨機事件邏輯 (修正後的 async 版本) ---
+        async function triggerRandomEvent(p) {
             const events = [
                 {
                     f: async () => {
                         p.skipTurns = 2;
                         showModal("假冒寸神，被貶為迷你寸", eventPhotos.mini, "下兩回合不能擲骰子：社區服務中...");
-                        return false;
+                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
                     }
                 },
                 {
                     f: async () => {
                         p.fixedSteps = 3;
                         showModal("累累病發作", eventPhotos.tired, "下三回合只能走一步。");
-                        return false;
+                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
                     }
                 },
                 {
                     f: async () => {
                         const opp = players[1 - currentPlayerIdx];
                         showModal("提供抓背服務", eventPhotos.scratch, "自己升級，對方前進三格！");
-                        await upgradeLogic(p, "抓背獎勵");
-                        await movePlayer(opp, 3, false);
-                        return false;
+                        document.getElementById('close-btn').onclick = async () => {
+                            document.getElementById('modal').style.display = 'none';
+                            await upgradeLogic(p, "抓背獎勵");
+                            await movePlayer(opp, 3, false);
+                            nextTurn();
+                        };
                     }
                 },
                 {
                     f: async () => {
                         p.reverseNext = true;
                         showModal("沈迷抓寶迷路了", eventPhotos.pokemon, "下回合自己往後走。");
-                        return false;
+                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
                     }
                 },
                 {
@@ -223,47 +226,42 @@
                         showModal("被小諾騷擾耽誤", eventPhotos.nuo, "往後退 3 格。");
                         document.getElementById('close-btn').onclick = async () => {
                             document.getElementById('modal').style.display = 'none';
-                            await movePlayer(p, -3, true);
+                            await movePlayer(p, -3, true); // 此處 movePlayer 會自動觸發 nextTurn
                         };
-                        return true;
                     }
                 },
                 {
                     f: async () => {
                         showModal("飆車！", eventPhotos.racing, "兩人一起前進 4 格！");
-                        await movePlayer(players[0], 4, false);
-                        await movePlayer(players[1], 4, false);
-                        return false;
+                        document.getElementById('close-btn').onclick = async () => {
+                            document.getElementById('modal').style.display = 'none';
+                            await movePlayer(players[0], 4, false);
+                            await movePlayer(players[1], 4, false);
+                            nextTurn();
+                        };
                     }
                 },
                 {
                     f: async () => {
                         showModal("和蹭子玩", eventPhotos.ceng, "什麼事都沒發生，但很可愛。");
-                        return false;
+                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
                     }
                 }
             ];
 
             const ev = events[Math.floor(Math.random() * events.length)];
-            ev.f().then(isInternalHandled => {
-                if(!isInternalHandled) {
-                    document.getElementById('close-btn').onclick = () => {
-                        document.getElementById('modal').style.display = 'none';
-                        nextTurn();
-                    };
-                }
-            });
+            await ev.f();
         }
 
-        // --- 5. 升降級與 UI ---
+        // --- 5. 升降級與 UI (修正回傳 Promise 以免卡死) ---
         async function upgradeLogic(p, reason) {
             if(p.dice === 15) { victory(p); return true; }
             const nextLv = { 4: 6, 6: 10, 10: 15 };
             p.dice = nextLv[p.dice];
             updateUI();
-            showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${rankNames[p.dice]}】\n(骰子進化為 D${p.dice})`);
+            
             return new Promise(resolve => {
-                const originalOnclick = document.getElementById('close-btn').onclick;
+                showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${rankNames[p.dice]}】\n(骰子進化為 D${p.dice})`);
                 document.getElementById('close-btn').onclick = () => {
                     document.getElementById('modal').style.display = 'none';
                     resolve(false);
@@ -276,7 +274,70 @@
             const prevLv = { 15: 10, 10: 6, 6: 4 };
             p.dice = prevLv[p.dice];
             updateUI();
-            showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${rankNames[p.dice]}】\n(骰子退化為 D${p.dice})`);
+            
             return new Promise(resolve => {
+                showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${rankNames[p.dice]}】\n(骰子退化為 D${p.dice})`);
                 document.getElementById('close-btn').onclick = () => {
-                    document.getElementById('modal
+                    document.getElementById('modal').style.display = 'none';
+                    resolve();
+                };
+            });
+        }
+
+        function nextTurn() {
+            isMoving = false;
+            currentPlayerIdx = 1 - currentPlayerIdx;
+            updateUI();
+        }
+
+        function updateUI() {
+            players.forEach((p, i) => {
+                const tag = document.getElementById(p.tag);
+                const rank = rankNames[p.dice];
+                tag.innerText = `P${p.id}: ${rank} (D${p.dice})`;
+                tag.classList.toggle('active', i === currentPlayerIdx);
+                
+                const statusEl = document.getElementById(`p${p.id}-status`);
+                statusEl.innerHTML = 
+                    p.skipTurns > 0 ? `<span class="status-badge">社區服務</span>` : 
+                    (p.fixedSteps > 0 ? `<span class="status-badge">累累病</span>` : "");
+                
+                document.getElementById(p.token).classList.toggle('mini', p.skipTurns > 0);
+            });
+            document.getElementById('status-bar').innerText = `輪到 玩家 ${players[currentPlayerIdx].id}`;
+        }
+
+        function updateTokens() {
+            players.forEach(p => {
+                const cell = document.getElementsByClassName('cell')[p.pos];
+                const boardRect = document.getElementById('game-container').getBoundingClientRect();
+                const rect = cell.getBoundingClientRect();
+                const el = document.getElementById(p.token);
+                const offset = p.id === 1 ? -6 : 6;
+                el.style.left = (rect.left - boardRect.left + rect.width/2 - 16 + offset) + 'px';
+                el.style.top = (rect.top - boardRect.top + rect.height/2 - 16 + offset) + 'px';
+            });
+        }
+
+        function showModal(t, img, txt) {
+            document.getElementById('modal-title').innerText = t;
+            const imgEl = document.getElementById('modal-img');
+            if(img) { imgEl.src = img; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; }
+            document.getElementById('modal-text').innerText = txt;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function victory(p) {
+            confetti({ particleCount: 300, spread: 150, origin: { y: 0.6 } });
+            showModal("🎊 終極大驚喜 🎊", "", `玩家 ${p.id} 成為無所不能的寸神！\n希望你玩得開心，生日快樂！💖`);
+            document.getElementById('dice-btn').style.pointerEvents = 'none';
+            document.getElementById('close-btn').innerText = "再玩一次";
+            document.getElementById('close-btn').onclick = () => location.reload();
+        }
+
+        document.getElementById('reset-btn').onclick = () => { if(confirm("確定重啟？")) location.reload(); };
+        initBoard();
+        window.onresize = updateTokens;
+    </script>
+</body>
+</html>
