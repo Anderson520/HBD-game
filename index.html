@@ -1,0 +1,316 @@
+{\rtf1\ansi\ansicpg950\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="zh-TW">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\
+    <title>\uc0\u22238 \u25014 \u22823 \u23500 \u32705  - \u29983 \u26085 \u39514 \u21916  Vibe \u29256 </title>\
+    <style>\
+        :root \{ --p1-color: #ff85a2; --p2-color: #4cc9f0; --accent-color: #f72585; --bg-color: #fff5f7; \}\
+        * \{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; \}\
+        body \{ margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg-color); overflow: hidden; display: flex; flex-direction: column; align-items: center; \}\
+        \
+        #status-bar \{ margin-top: 15px; font-size: 18px; font-weight: bold; color: #333; height: 30px; text-align: center; \}\
+        \
+        #player-info \{ display: flex; gap: 10px; margin: 10px 0; \}\
+        .p-tag \{ padding: 6px 12px; border-radius: 20px; font-size: 12px; background: white; border: 2px solid #ddd; transition: 0.3s; color: #888; position: relative; \}\
+        .p-tag.active.p1-active \{ border-color: var(--p1-color); background: var(--p1-color); color: white; transform: scale(1.1); \}\
+        .p-tag.active.p2-active \{ border-color: var(--p2-color); background: var(--p2-color); color: white; transform: scale(1.1); \}\
+        .status-badge \{ position: absolute; top: -10px; right: -5px; font-size: 9px; background: #ff4d4d; color: white; padding: 2px 5px; border-radius: 8px; \}\
+\
+        #game-container \{ position: relative; width: 92vw; height: 92vw; max-width: 400px; max-height: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 10px; \}\
+        .board \{ display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(6, 1fr); gap: 4px; width: 100%; height: 100%; \}\
+        .cell \{ background: #fff0f3; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 11px; border: 1px solid #ffdeeb; position: relative; font-weight: bold; text-align: center; padding: 2px; \}\
+        .cell.special \{ background: #ffd166; color: #555; border-color: #f4a261; \}\
+        .cell.upgrade \{ background: #06d6a0; color: white; border-color: #059669; \}\
+        .cell.start \{ background: var(--accent-color); color: white; \}\
+        \
+        .player-token \{ position: absolute; width: 32px; height: 32px; z-index: 10; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27); border-radius: 50%; border: 3px solid white; object-fit: cover; box-shadow: 0 3px 6px rgba(0,0,0,0.2); \}\
+        .player-token.mini \{ transform: scale(0.6); opacity: 0.8; \}\
+\
+        .dice-box \{ width: 70px; height: 70px; background: white; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: var(--accent-color); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--accent-color); margin: 15px 0; cursor: pointer; \}\
+        .rolling-anim \{ animation: shake 0.1s infinite; color: #ccc; \}\
+        @keyframes shake \{ 0% \{ transform: translate(2px, 2px); \} 50% \{ transform: translate(-2px, -2px); \} 100% \{ transform: translate(2px, -2px); \} \}\
+        \
+        #reset-btn \{ background: #aaa; color: white; border: none; padding: 8px 20px; border-radius: 15px; font-size: 12px; cursor: pointer; margin-bottom: 10px; \}\
+        \
+        #modal \{ display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 20px; \}\
+        .modal-content \{ background: white; width: 90%; max-width: 350px; border-radius: 20px; padding: 20px; text-align: center; \}\
+        .modal-content img \{ width: 100%; max-height: 220px; border-radius: 12px; margin-bottom: 12px; object-fit: cover; display: none; \}\
+        #modal-text \{ font-size: 16px; line-height: 1.5; color: #444; margin: 10px 0; font-weight: 500; \}\
+        #close-btn \{ background: var(--accent-color); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; \}\
+    </style>\
+</head>\
+<body>\
+\
+    <div id="status-bar">\uc0\u28310 \u20633 \u22909 \u38283 \u22987 \u22238 \u25014 \u20102 \u21966 \u65311 </div>\
+    <div id="player-info">\
+        <div id="p1-tag" class="p-tag p1-active active">P1: D4 <span id="p1-status"></span></div>\
+        <div id="p2-tag" class="p-tag p2-active">P2: D4 <span id="p2-status"></span></div>\
+    </div>\
+\
+    <div id="game-container">\
+        <img id="p1-token" class="player-token" src="me.png" onerror="this.src='https://ui-avatars.com/api/?name=P1&background=ff85a2&color=fff'">\
+        <img id="p2-token" class="player-token" src="you.png" onerror="this.src='https://ui-avatars.com/api/?name=P2&background=4cc9f0&color=fff'">\
+        <div class="board" id="board"></div>\
+    </div>\
+\
+    <div class="dice-box" id="dice-btn">?</div>\
+    <button id="reset-btn">\uc0\u37325 \u26032 \u21855 \u21205 \u36938 \u25138 </button>\
+\
+    <div id="modal">\
+        <div class="modal-content">\
+            <h3 id="modal-title" style="color: var(--accent-color); margin: 0 0 10px 0;"></h3>\
+            <img id="modal-img" src="">\
+            <div id="modal-text"></div>\
+            <button id="close-btn">\uc0\u32380 \u32396 \u21069 \u36914 </button>\
+        </div>\
+    </div>\
+\
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>\
+    <script>\
+        // --- 1. \uc0\u37197 \u32622 \u21312 \u22495  ---\
+        const mapPhotos = ["p1.jpg", "p2.jpg", "p3.jpg", "p4.jpg", "p5.jpg", "p6.jpg", "p7.jpg", "p8.jpg", "p9.jpg", "p10.jpg"];\
+        const mapTexts = ["\uc0\u37027 \u26159 \u25105 \u20497 \u26368 \u21021 \u30340 \u36215 \u40670 ", "\u22963 \u26368 \u24859 \u21507 \u30340 \u19968 \u38931 \u39151 ", "\u37027 \u27425 \u21557 \u26550 \u24460 \u30340 \u21644 \u22909 ", "\u26143 \u31354 \u19979 \u30340 \u25215 \u35582 ", "\u19968 \u36215 \u21162 \u21147 \u30340 \u26178 \u20809 ", "\u22963 \u31505 \u24471 \u26368 \u38283 \u24515 \u30340 \u30636 \u38291 ", "\u25105 \u20497 \u20849 \u21516 \u30340 \u22818 \u24819 ", "\u25163 \u29309 \u25163 \u30340 \u28331 \u24230 ", "\u22963 \u26159 \u25105 \u30340 \u21807 \u19968 ", "\u29983 \u26085 \u24555 \u27138 \u65292 \u25105 \u30340 \u24859 "];\
+\
+        const eventPhotos = \{\
+            mini: "e1.jpg",    // \uc0\u20551 \u20882 \u23544 \u31070 \
+            tired: "e2.jpg",   // \uc0\u32047 \u32047 \u30149 \
+            scratch: "e3.jpg", // \uc0\u25235 \u32972 \
+            pokemon: "e4.jpg", // \uc0\u25235 \u23542 \
+            nuo: "e5.jpg",     // \uc0\u23567 \u35582 \
+            racing: "e6.jpg",  // \uc0\u39110 \u36554 \
+            ceng: "e7.jpg"     // \uc0\u36461 \u23376 \
+        \};\
+\
+        // --- 2. \uc0\u36938 \u25138 \u26680 \u24515 \u35722 \u25976  ---\
+        let players = [\
+            \{ id: 1, pos: 0, dice: 4, token: 'p1-token', tag: 'p1-tag', skipTurns: 0, fixedSteps: 0, reverseNext: false \},\
+            \{ id: 2, pos: 0, dice: 4, token: 'p2-token', tag: 'p2-tag', skipTurns: 0, fixedSteps: 0, reverseNext: false \}\
+        ];\
+        let currentPlayerIdx = 0;\
+        let isMoving = false;\
+        const totalCells = 20;\
+        const layout = ['Start','M','S','M','M','S','U','M','S','M','S','M','M','S','U','M','S','M','S','M'];\
+        const gridMap = [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[5,1],[4,1],[3,1],[2,1]];\
+\
+        function initBoard() \{\
+            const boardEl = document.getElementById('board');\
+            boardEl.innerHTML = '';\
+            let mIdx = 0;\
+            layout.forEach((type, i) => \{\
+                const cell = document.createElement('div');\
+                cell.className = 'cell';\
+                cell.style.gridRow = gridMap[i][0];\
+                cell.style.gridColumn = gridMap[i][1];\
+                if(type === 'Start') \{ cell.innerText = "START"; cell.classList.add('start'); \}\
+                else if(type === 'S') \{ cell.innerText = "\uc0\u65311 "; cell.classList.add('special'); \}\
+                else if(type === 'U') \{ cell.innerText = "UP"; cell.classList.add('upgrade'); \}\
+                else \{ cell.innerText = "\uc0\u10084 "; cell.dataset.mIdx = mIdx % mapPhotos.length; mIdx++; \}\
+                boardEl.appendChild(cell);\
+            \});\
+            updateTokens();\
+            updateUI();\
+        \}\
+\
+        // --- 3. \uc0\u25842 \u39600 \u23376 \u33287 \u31227 \u21205 \u37007 \u36655  ---\
+        document.getElementById('dice-btn').onclick = function() \{\
+            if(isMoving) return;\
+            let p = players[currentPlayerIdx];\
+\
+            if(p.skipTurns > 0) \{\
+                p.skipTurns--;\
+                showModal("\uc0\u31038 \u21312 \u26381 \u21209 \u20013 ...", eventPhotos.mini, `\u36996 \u38656 \u35201 \u26381 \u21009  $\{p.skipTurns + 1\} \u22238 \u21512 \u12290 `);\
+                document.getElementById('close-btn').onclick = () => \{\
+                    document.getElementById('modal').style.display = 'none';\
+                    nextTurn();\
+                \};\
+                return;\
+            \}\
+\
+            this.classList.add('rolling-anim');\
+            let counter = 0;\
+            let rollInterval = setInterval(() => \{\
+                this.innerText = Math.floor(Math.random() * p.dice) + 1;\
+                if(++counter > 10) \{\
+                    clearInterval(rollInterval);\
+                    let finalRoll = Math.floor(Math.random() * p.dice) + 1;\
+                    if(p.fixedSteps > 0) \{ p.fixedSteps--; finalRoll = 1; \}\
+                    if(p.reverseNext) \{ p.reverseNext = false; finalRoll = -finalRoll; \}\
+                    this.innerText = Math.abs(finalRoll);\
+                    this.classList.remove('rolling-anim');\
+                    movePlayer(p, finalRoll, true);\
+                \}\
+            \}, 80);\
+        \};\
+\
+        async function movePlayer(p, steps, triggerLanding = true) \{\
+            isMoving = true;\
+            let direction = steps > 0 ? 1 : -1;\
+            let count = Math.abs(steps);\
+\
+            for(let i=0; i<count; i++) \{\
+                p.pos = (p.pos + direction + totalCells) % totalCells;\
+                updateTokens();\
+                if(p.pos === 0) \{\
+                    if(direction === 1) \{ \
+                        const win = await upgradeLogic(p, "\uc0\u38918 \u21033 \u32350 \u23436 \u19968 \u22280 \u65281 "); \
+                        if(win) return; \
+                    \} else \{ \
+                        await downgradeLogic(p); \
+                    \}\
+                \}\
+                await new Promise(r => setTimeout(r, 280));\
+            \}\
+            if(triggerLanding) handleLanding(p);\
+        \}\
+\
+        function handleLanding(p) \{\
+            const type = layout[p.pos];\
+            if(type === 'U') \{\
+                upgradeLogic(p, "\uc0\u36393 \u21040 \u21319 \u32026 \u26684 \u65281 ").then(win => \{ if(!win) nextTurn(); \});\
+            \} else if(type === 'S') \{\
+                triggerRandomEvent(p);\
+            \} else if(document.getElementsByClassName('cell')[p.pos].dataset.mIdx !== undefined) \{\
+                const idx = document.getElementsByClassName('cell')[p.pos].dataset.mIdx;\
+                showModal("\uc0\u37027 \u19968 \u24180 ...", mapPhotos[idx], mapTexts[idx]);\
+                document.getElementById('close-btn').onclick = () => \{ document.getElementById('modal').style.display = 'none'; nextTurn(); \};\
+            \} else \{\
+                nextTurn();\
+            \}\
+        \}\
+\
+        // --- 4. \uc0\u38568 \u27231 \u20107 \u20214 \u37007 \u36655  (\u21547 \u29031 \u29255 ) ---\
+        function triggerRandomEvent(p) \{\
+            const events = [\
+                \{\
+                    f: () => \{\
+                        p.skipTurns = 2;\
+                        showModal("\uc0\u20551 \u20882 \u23544 \u31070 \u65292 \u34987 \u36022 \u28858 \u36855 \u20320 \u23544 ", eventPhotos.mini, "\u19979 \u20841 \u22238 \u21512 \u19981 \u33021 \u25842 \u39600 \u23376 \u65306 \u31038 \u21312 \u26381 \u21209 \u20013 ...");\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        p.fixedSteps = 3;\
+                        showModal("\uc0\u32047 \u32047 \u30149 \u30332 \u20316 ", eventPhotos.tired, "\u19979 \u19977 \u22238 \u21512 \u21482 \u33021 \u36208 \u19968 \u27493 \u12290 ");\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        const opp = players[1 - currentPlayerIdx];\
+                        showModal("\uc0\u25552 \u20379 \u25235 \u32972 \u26381 \u21209 ", eventPhotos.scratch, "\u33258 \u24049 \u21319 \u32026 \u65292 \u23565 \u26041 \u21069 \u36914 \u19977 \u26684 \u65281 ");\
+                        upgradeLogic(p, "\uc0\u25235 \u32972 \u29518 \u21237 ");\
+                        movePlayer(opp, 3, false);\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        p.reverseNext = true;\
+                        showModal("\uc0\u27784 \u36855 \u25235 \u23542 \u36855 \u36335 \u20102 ", eventPhotos.pokemon, "\u19979 \u22238 \u21512 \u33258 \u24049 \u24448 \u24460 \u36208 \u12290 ");\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        showModal("\uc0\u34987 \u23567 \u35582 \u39479 \u25854 \u32829 \u35492 ", eventPhotos.nuo, "\u24448 \u24460 \u36864  3 \u26684 \u12290 ");\
+                        setTimeout(() => movePlayer(p, -3, true), 800);\
+                        return true;\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        showModal("\uc0\u39110 \u36554 \u65281 ", eventPhotos.racing, "\u20841 \u20154 \u19968 \u36215 \u21069 \u36914  4 \u26684 \u65281 ");\
+                        movePlayer(players[0], 4, false);\
+                        movePlayer(players[1], 4, false);\
+                    \}\
+                \},\
+                \{\
+                    f: () => \{\
+                        showModal("\uc0\u21644 \u36461 \u23376 \u29609 ", eventPhotos.ceng, "\u20160 \u40636 \u20107 \u37117 \u27794 \u30332 \u29983 \u65292 \u20294 \u24456 \u21487 \u24859 \u12290 ");\
+                    \}\
+                \}\
+            ];\
+\
+            const ev = events[Math.floor(Math.random() * events.length)];\
+            const isAsync = ev.f();\
+            document.getElementById('close-btn').onclick = () => \{\
+                document.getElementById('modal').style.display = 'none';\
+                if(!isAsync) nextTurn();\
+            \};\
+        \}\
+\
+        // --- 5. \uc0\u21319 \u38477 \u32026 \u33287  UI ---\
+        async function upgradeLogic(p, reason) \{\
+            if(p.dice === 15) \{ victory(p); return true; \}\
+            const lv = \{ 4: 6, 6: 10, 10: 15 \};\
+            p.dice = lv[p.dice];\
+            updateUI();\
+            showModal("LEVEL UP!", "", `$\{reason\}\\n\uc0\u39600 \u23376 \u36914 \u21270 \u28858  D$\{p.dice\}\u65281 `);\
+            document.getElementById('close-btn').onclick = () => document.getElementById('modal').style.display = 'none';\
+            return false;\
+        \}\
+\
+        async function downgradeLogic(p) \{\
+            const lv = \{ 15: 10, 10: 6, 6: 4, 4: 4 \};\
+            p.dice = lv[p.dice];\
+            updateUI();\
+        \}\
+\
+        function nextTurn() \{\
+            isMoving = false;\
+            currentPlayerIdx = 1 - currentPlayerIdx;\
+            updateUI();\
+        \}\
+\
+        function updateUI() \{\
+            players.forEach((p, i) => \{\
+                const tag = document.getElementById(p.tag);\
+                tag.innerText = `P$\{p.id\}: D$\{p.dice\}`;\
+                tag.classList.toggle('active', i === currentPlayerIdx);\
+                document.getElementById(`p$\{p.id\}-status`).innerHTML = \
+                    p.skipTurns > 0 ? `<span class="status-badge">\uc0\u31038 \u21312 \u26381 \u21209 </span>` : \
+                    (p.fixedSteps > 0 ? `<span class="status-badge">\uc0\u32047 \u32047 \u30149 </span>` : "");\
+                document.getElementById(p.token).classList.toggle('mini', p.skipTurns > 0);\
+            \});\
+            document.getElementById('status-bar').innerText = `\uc0\u36650 \u21040  \u29609 \u23478  $\{players[currentPlayerIdx].id\}`;\
+        \}\
+\
+        function updateTokens() \{\
+            players.forEach(p => \{\
+                const cell = document.getElementsByClassName('cell')[p.pos];\
+                const boardRect = document.getElementById('game-container').getBoundingClientRect();\
+                const rect = cell.getBoundingClientRect();\
+                const el = document.getElementById(p.token);\
+                const offset = p.id === 1 ? -6 : 6;\
+                el.style.left = (rect.left - boardRect.left + rect.width/2 - 16 + offset) + 'px';\
+                el.style.top = (rect.top - boardRect.top + rect.height/2 - 16 + offset) + 'px';\
+            \});\
+        \}\
+\
+        function showModal(t, img, txt) \{\
+            document.getElementById('modal-title').innerText = t;\
+            const imgEl = document.getElementById('modal-img');\
+            if(img) \{ imgEl.src = img; imgEl.style.display = 'block'; \} else \{ imgEl.style.display = 'none'; \}\
+            document.getElementById('modal-text').innerText = txt;\
+            document.getElementById('modal').style.display = 'flex';\
+        \}\
+\
+        function victory(p) \{\
+            confetti(\{ particleCount: 300, spread: 150, origin: \{ y: 0.6 \} \});\
+            showModal("\uc0\u55356 \u57226  \u32066 \u26997 \u22823 \u39514 \u21916  \u55356 \u57226 ", "", `\u29609 \u23478  $\{p.id\} \u23436 \u25104 \u20102  D15 \u32066 \u26997 \u21319 \u32026 \u65281 \\n\u22963 \u26159 \u36889 \u27573 \u26053 \u31243 \u26368 \u32654 \u30340 \u39080 \u26223 \u65292 \u29983 \u26085 \u24555 \u27138 \u65281 \u55357 \u56470 `);\
+            document.getElementById('dice-btn').style.pointerEvents = 'none';\
+            document.getElementById('close-btn').innerText = "\uc0\u20877 \u29609 \u19968 \u27425 ";\
+            document.getElementById('close-btn').onclick = () => location.reload();\
+        \}\
+\
+        document.getElementById('reset-btn').onclick = () => \{ if(confirm("\uc0\u30906 \u23450 \u37325 \u21855 \u65311 ")) location.reload(); \};\
+        initBoard();\
+        window.onresize = updateTokens;\
+    </script>\
+</body>\
+</html>}
