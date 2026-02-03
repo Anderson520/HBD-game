@@ -6,338 +6,211 @@
     <title>小寸對決</title>
     <style>
         :root { --p1-color: #ff85a2; --p2-color: #4cc9f0; --accent-color: #f72585; --bg-color: #fff5f7; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body { margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg-color); overflow: hidden; display: flex; flex-direction: column; align-items: center; }
-        
-        #status-bar { margin-top: 15px; font-size: 18px; font-weight: bold; color: #333; height: 30px; text-align: center; }
-        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: var(--bg-color); overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+        #status-bar { margin-top: 15px; font-size: 18px; font-weight: bold; color: #333; height: 30px; }
         #player-info { display: flex; gap: 10px; margin: 10px 0; }
-        .p-tag { padding: 6px 12px; border-radius: 20px; font-size: 12px; background: white; border: 2px solid #ddd; transition: 0.3s; color: #888; position: relative; }
-        .p-tag.active.p1-active { border-color: var(--p1-color); background: var(--p1-color); color: white; transform: scale(1.1); }
-        .p-tag.active.p2-active { border-color: var(--p2-color); background: var(--p2-color); color: white; transform: scale(1.1); }
-        .status-badge { position: absolute; top: -10px; right: -5px; font-size: 9px; background: #ff4d4d; color: white; padding: 2px 5px; border-radius: 8px; }
-
+        .p-tag { padding: 6px 12px; border-radius: 20px; font-size: 12px; background: white; border: 2px solid #ddd; color: #888; }
+        .p-tag.active { border-color: var(--accent-color); transform: scale(1.1); font-weight: bold; }
+        .p1-active.active { background: var(--p1-color); color: white; border-color: var(--p1-color); }
+        .p2-active.active { background: var(--p2-color); color: white; border-color: var(--p2-color); }
         #game-container { position: relative; width: 92vw; height: 92vw; max-width: 400px; max-height: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 10px; }
         .board { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(6, 1fr); gap: 4px; width: 100%; height: 100%; }
-        .cell { background: #fff0f3; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 11px; border: 1px solid #ffdeeb; position: relative; font-weight: bold; text-align: center; padding: 2px; }
-        .cell.special { background: #ffd166; color: #555; border-color: #f4a261; }
-        .cell.upgrade { background: #06d6a0; color: white; border-color: #059669; }
+        .cell { background: #fff0f3; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 11px; border: 1px solid #ffdeeb; font-weight: bold; text-align: center; }
+        .cell.special { background: #ffd166; color: #555; }
+        .cell.upgrade { background: #06d6a0; color: white; }
         .cell.start { background: var(--accent-color); color: white; }
-        
-        .player-token { position: absolute; width: 32px; height: 32px; z-index: 10; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.27); border-radius: 50%; border: 3px solid white; object-fit: cover; box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
-        .player-token.mini { transform: scale(0.6); opacity: 0.8; }
-
+        .player-token { position: absolute; width: 30px; height: 30px; z-index: 10; transition: all 0.3s ease; border-radius: 50%; border: 2px solid white; object-fit: cover; pointer-events: none; }
         .dice-box { width: 70px; height: 70px; background: white; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: var(--accent-color); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 3px solid var(--accent-color); margin: 15px 0; cursor: pointer; }
-        .rolling-anim { animation: shake 0.1s infinite; color: #ccc; }
-        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(2px, -2px); } }
-        
-        #reset-btn { background: #aaa; color: white; border: none; padding: 8px 20px; border-radius: 15px; font-size: 12px; cursor: pointer; margin-bottom: 10px; }
-        
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: white; width: 90%; max-width: 350px; border-radius: 20px; padding: 20px; text-align: center; }
-        .modal-content img { width: 100%; max-height: 220px; border-radius: 12px; margin-bottom: 12px; object-fit: cover; display: none; }
-        #modal-text { font-size: 16px; line-height: 1.5; color: #444; margin: 10px 0; font-weight: 500; }
-        #close-btn { background: var(--accent-color); color: white; border: none; padding: 12px 30px; border-radius: 10px; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; }
+        .rolling { animation: shake 0.1s infinite; opacity: 0.5; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, -1px); } }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 85%; max-width: 320px; border-radius: 20px; padding: 20px; text-align: center; }
+        .modal-content img { width: 100%; border-radius: 12px; margin-bottom: 12px; display: none; }
+        #close-btn { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; margin-top: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <div id="status-bar">準備好開始了嗎？</div>
     <div id="player-info">
-        <div id="p1-tag" class="p-tag p1-active active">P1: 小寸子 (D4) <span id="p1-status"></span></div>
-        <div id="p2-tag" class="p-tag p2-active">P2: 小寸子 (D4) <span id="p2-status"></span></div>
+        <div id="p1-tag" class="p-tag p1-active">P1: 小寸子 (D4)</div>
+        <div id="p2-tag" class="p-tag p2-active">P2: 小寸子 (D4)</div>
     </div>
 
     <div id="game-container">
-        <img id="p1-token" class="player-token" src="me.png" onerror="this.src='https://ui-avatars.com/api/?name=P1&background=ff85a2&color=fff'">
-        <img id="p2-token" class="player-token" src="you.png" onerror="this.src='https://ui-avatars.com/api/?name=P2&background=4cc9f0&color=fff'">
+        <img id="p1-token" class="player-token" src="me.jpeg" onerror="this.src='https://ui-avatars.com/api/?name=P1&background=ff85a2&color=fff'">
+        <img id="p2-token" class="player-token" src="you.jpeg" onerror="this.src='https://ui-avatars.com/api/?name=P2&background=4cc9f0&color=fff'">
         <div class="board" id="board"></div>
     </div>
 
     <div class="dice-box" id="dice-btn">?</div>
-    <button id="reset-btn">重新啟動遊戲</button>
+    <button onclick="location.reload()" style="background:none; border:none; color:#aaa; cursor:pointer;">重新開始</button>
 
     <div id="modal">
         <div class="modal-content">
-            <h3 id="modal-title" style="color: var(--accent-color); margin: 0 0 10px 0;"></h3>
+            <h3 id="modal-title" style="color:var(--accent-color); margin:0;"></h3>
             <img id="modal-img" src="">
-            <div id="modal-text"></div>
+            <p id="modal-text"></p>
             <button id="close-btn">繼續前進</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
-        // --- 1. 配置區域 ---
         const mapPhotos = ["p1.jpeg", "p2.jpeg", "p3.jpeg", "p4.jpeg", "p5.jpeg", "p6.jpeg", "p7.jpeg", "p8.jpeg", "p9.jpeg", "p10.jpeg"];
         const mapTexts = ["新加坡動物園遇見狐猴 超萌！", "環球奇怪自拍", "新加坡合照 兄弟手氣爆棚", "......", "內衣大盜", "第一次一起滑雪，好玩！", "成為薯粉", "被小南寵幸", "一起堆的雪地小白", "這張純粹刷到 很好笑哈"];
-
-        const eventPhotos = {
-            mini: "e1.jpeg",    
-            tired: "e2.jpeg",   
-            scratch: "e3.jpeg", 
-            pokemon: "e4.jpeg", 
-            nuo: "e5.jpeg",     
-            racing: "e6.jpeg",  
-            ceng: "e7.jpeg"     
-        };
-
+        const eventPhotos = { mini: "e1.jpeg", tired: "e2.jpeg", scratch: "e3.jpeg", pokemon: "e4.jpeg", nuo: "e5.jpeg", racing: "e6.jpeg", ceng: "e7.jpeg" };
         const rankNames = { 4: "小寸子", 6: "寸植", 10: "大植", 15: "實習寸神" };
 
-        // --- 2. 遊戲核心變數 ---
         let players = [
-            { id: 1, pos: 0, dice: 4, token: 'p1-token', tag: 'p1-tag', skipTurns: 0, fixedSteps: 0, reverseNext: false },
-            { id: 2, pos: 0, dice: 4, token: 'p2-token', tag: 'p2-tag', skipTurns: 0, fixedSteps: 0, reverseNext: false }
+            { id: 1, pos: 0, dice: 4, token: 'p1-token', tag: 'p1-tag', skip: 0, tired: 0, rev: false },
+            { id: 2, pos: 0, dice: 4, token: 'p2-token', tag: 'p2-tag', skip: 0, tired: 0, rev: false }
         ];
-        let currentPlayerIdx = 0;
-        let isMoving = false;
-        const totalCells = 20;
-        const layout = ['Start','M','S','M','M','S','U','M','S','M','S','M','M','S','U','M','S','M','S','M'];
-        const gridMap = [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,3],[6,2],[6,1],[5,1],[4,1],[3,1],[2,1]];
+        let turn = 0;
+        let busy = false;
 
-        function initBoard() {
-            const boardEl = document.getElementById('board');
-            boardEl.innerHTML = '';
-            let mIdx = 0;
-            layout.forEach((type, i) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.style.gridRow = gridMap[i][0];
-                cell.style.gridColumn = gridMap[i][1];
-                if(type === 'Start') { cell.innerText = "START"; cell.classList.add('start'); }
-                else if(type === 'S') { cell.innerText = "？"; cell.classList.add('special'); }
-                else if(type === 'U') { cell.innerText = "UP"; cell.classList.add('upgrade'); }
-                else { cell.innerText = "❤"; cell.dataset.mIdx = mIdx % mapPhotos.length; mIdx++; }
-                boardEl.appendChild(cell);
+        const layout = ['Start','M','S','M','M','S','U','M','S','M','S','M','M','S','U','M','S','M','S','M'];
+        const grid = [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[5,1],[4,1],[3,1],[2,1]];
+
+        function init() {
+            const b = document.getElementById('board');
+            let mCount = 0;
+            layout.forEach((t, i) => {
+                const c = document.createElement('div');
+                c.className = 'cell';
+                c.style.gridRow = grid[i][0]; c.style.gridColumn = grid[i][1];
+                if(t === 'Start') { c.innerText = "START"; c.classList.add('start'); }
+                else if(t === 'S') { c.innerText = "？"; c.classList.add('special'); }
+                else if(t === 'U') { c.innerText = "UP"; c.classList.add('upgrade'); }
+                else { c.innerText = "❤"; c.dataset.idx = mCount % 10; mCount++; }
+                b.appendChild(c);
             });
-            updateTokens();
-            updateUI();
+            refresh();
         }
 
-        // --- 3. 擲骰子與移動邏輯 ---
         document.getElementById('dice-btn').onclick = function() {
-            if(isMoving) return;
-            let p = players[currentPlayerIdx];
+            if(busy) return;
+            const p = players[turn];
+            if(p.skip > 0) {
+                p.skip--;
+                show("社區服務中...", eventPhotos.mini, "還沒完成服務，下一位！", endTurn);
+                return;
+            }
+            this.classList.add('rolling');
+            setTimeout(() => {
+                this.classList.remove('rolling');
+                let roll = Math.floor(Math.random() * p.dice) + 1;
+                if(p.tired > 0) { p.tired--; roll = 1; }
+                if(p.rev) { p.rev = false; roll = -roll; }
+                this.innerText = Math.abs(roll);
+                busy = true;
+                move(p, roll);
+            }, 600);
+        };
 
-            if(p.skipTurns > 0) {
-                p.skipTurns--;
-                showModal("社區服務中...", eventPhotos.mini, `還需要服刑 ${p.skipTurns + 1} 回合。`);
-                document.getElementById('close-btn').onclick = () => {
-                    document.getElementById('modal').style.display = 'none';
-                    nextTurn();
-                };
+        function move(p, steps) {
+            if(steps === 0) { landing(p); return; }
+            const dir = steps > 0 ? 1 : -1;
+            p.pos = (p.pos + dir + 20) % 20;
+            if(p.pos === 0 && dir === 1) { 
+                if(p.dice === 15) { p.isVictory = true; } // D15繞完一圈 標記勝利
+                else {
+                    const next = { 4: 6, 6: 10, 10: 15 };
+                    p.dice = next[p.dice];
+                    p.passed = true;
+                }
+            }
+            refresh();
+            setTimeout(() => move(p, steps > 0 ? steps - 1 : steps + 1), 250);
+        }
+
+        function landing(p) {
+            // 先檢查是否達成勝利條件
+            if(p.isVictory) {
+                confetti(); 
+                show("🎊 恭喜 🎊", "", "成為最強寸神！\n生日快樂！💖 你贏了嗎？", () => location.reload());
+                return;
+            }
+            // 處理普通的繞圈升級彈窗
+            if(p.passed) {
+                p.passed = false;
+                show("升植！✨", "", "順利繞完一圈！\n晉級為【" + rankNames[p.dice] + "】\n(D" + p.dice + ")", () => landing(p));
                 return;
             }
 
-            this.classList.add('rolling-anim');
-            let counter = 0;
-            let rollInterval = setInterval(() => {
-                this.innerText = Math.floor(Math.random() * p.dice) + 1;
-                if(++counter > 10) {
-                    clearInterval(rollInterval);
-                    let finalRoll = Math.floor(Math.random() * p.dice) + 1;
-                    if(p.fixedSteps > 0) { p.fixedSteps--; finalRoll = 1; }
-                    if(p.reverseNext) { p.reverseNext = false; finalRoll = -finalRoll; }
-                    this.innerText = Math.abs(finalRoll);
-                    this.classList.remove('rolling-anim');
-                    movePlayer(p, finalRoll, true);
+            const t = layout[p.pos];
+            if(t === 'U') {
+                if(p.dice === 15) { 
+                    confetti(); 
+                    show("🎊 恭喜 🎊", "", "成為最強寸神！\n生日快樂！💖 你贏了嗎？", () => location.reload());
+                } else {
+                    const next = { 4: 6, 6: 10, 10: 15 };
+                    p.dice = next[p.dice];
+                    show("升植！✨", "", "踩到升級格！\n晉級為【" + rankNames[p.dice] + "】\n(D" + p.dice + ")", endTurn);
                 }
-            }, 80);
-        };
-
-        async function movePlayer(p, steps, triggerLanding = true) {
-            isMoving = true;
-            let direction = steps > 0 ? 1 : -1;
-            let count = Math.abs(steps);
-
-            for(let i=0; i<count; i++) {
-                p.pos = (p.pos + direction + totalCells) % totalCells;
-                updateTokens();
-                if(p.pos === 0) {
-                    if(direction === 1) { 
-                        const win = await upgradeLogic(p, "順利繞完一圈！"); 
-                        if(win) return; 
-                    } else { 
-                        await downgradeLogic(p); 
-                    }
-                }
-                await new Promise(r => setTimeout(r, 280));
-            }
-            if(triggerLanding) handleLanding(p);
-        }
-
-        async function handleLanding(p) {
-            const type = layout[p.pos];
-            if(type === 'U') {
-                const win = await upgradeLogic(p, "踩到升級格！");
-                if(!win) nextTurn();
-            } else if(type === 'S') {
-                triggerRandomEvent(p);
-            } else if(document.getElementsByClassName('cell')[p.pos].dataset.mIdx !== undefined) {
-                const idx = document.getElementsByClassName('cell')[p.pos].dataset.mIdx;
-                showModal("我們一起...", mapPhotos[idx], mapTexts[idx]);
-                document.getElementById('close-btn').onclick = () => { 
-                    document.getElementById('modal').style.display = 'none'; 
-                    nextTurn(); 
-                };
+            } else if(t === 'S') {
+                const evs = [
+                    () => { p.skip = 2; show("假冒寸神，被貶為迷你寸", eventPhotos.mini, "兩回合內無法行動。", endTurn); },
+                    () => { p.tired = 3; show("累累病發作", eventPhotos.tired, "下三回合只能走一步。", endTurn); },
+                    () => { 
+                        if(p.dice === 15) { p.isVictory = true; landing(p); return; }
+                        const next = { 4: 6, 6: 10, 10: 15 }; p.dice = next[p.dice];
+                        const opp = players[1-turn]; opp.pos = (opp.pos + 3) % 20;
+                        show("提供抓背服務", eventPhotos.scratch, "自己升級，對方前進三格！", () => { refresh(); endTurn(); });
+                    },
+                    () => { p.rev = true; show("沈迷抓寶迷路了", eventPhotos.pokemon, "下回合往後走。", endTurn); },
+                    () => { p.pos = (p.pos - 3 + 20) % 20; show("被小諾騷擾耽誤", eventPhotos.nuo, "後退 3 格。", () => { refresh(); endTurn(); }); },
+                    () => { 
+                        players[0].pos = (players[0].pos + 4) % 20; players[1].pos = (players[1].pos + 4) % 20;
+                        show("飆車！", eventPhotos.racing, "兩人一起前進 4 格！", () => { refresh(); endTurn(); });
+                    },
+                    () => { show("和蹭子玩", eventPhotos.ceng, "就很可愛。", endTurn); }
+                ];
+                evs[Math.floor(Math.random() * evs.length)]();
+            } else if(t === 'M') {
+                const i = document.getElementsByClassName('cell')[p.pos].dataset.idx;
+                show("我們一起...", mapPhotos[i], mapTexts[i], endTurn);
             } else {
-                nextTurn();
+                endTurn();
             }
         }
 
-        // --- 4. 隨機事件邏輯 (修正後的 async 版本) ---
-        async function triggerRandomEvent(p) {
-            const events = [
-                {
-                    f: async () => {
-                        p.skipTurns = 2;
-                        showModal("假冒寸神，被貶為迷你寸", eventPhotos.mini, "下兩回合不能擲骰子：社區服務中...");
-                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
-                    }
-                },
-                {
-                    f: async () => {
-                        p.fixedSteps = 3;
-                        showModal("累累病發作", eventPhotos.tired, "下三回合只能走一步。");
-                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
-                    }
-                },
-                {
-                    f: async () => {
-                        const opp = players[1 - currentPlayerIdx];
-                        showModal("提供抓背服務", eventPhotos.scratch, "自己升級，對方前進三格！");
-                        document.getElementById('close-btn').onclick = async () => {
-                            document.getElementById('modal').style.display = 'none';
-                            await upgradeLogic(p, "抓背獎勵");
-                            await movePlayer(opp, 3, false);
-                            nextTurn();
-                        };
-                    }
-                },
-                {
-                    f: async () => {
-                        p.reverseNext = true;
-                        showModal("沈迷抓寶迷路了", eventPhotos.pokemon, "下回合自己往後走。");
-                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
-                    }
-                },
-                {
-                    f: async () => {
-                        showModal("被小諾騷擾耽誤", eventPhotos.nuo, "往後退 3 格。");
-                        document.getElementById('close-btn').onclick = async () => {
-                            document.getElementById('modal').style.display = 'none';
-                            await movePlayer(p, -3, true); // 此處 movePlayer 會自動觸發 nextTurn
-                        };
-                    }
-                },
-                {
-                    f: async () => {
-                        showModal("飆車！", eventPhotos.racing, "兩人一起前進 4 格！");
-                        document.getElementById('close-btn').onclick = async () => {
-                            document.getElementById('modal').style.display = 'none';
-                            await movePlayer(players[0], 4, false);
-                            await movePlayer(players[1], 4, false);
-                            nextTurn();
-                        };
-                    }
-                },
-                {
-                    f: async () => {
-                        showModal("和蹭子玩", eventPhotos.ceng, "什麼事都沒發生，但很可愛。");
-                        document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
-                    }
-                }
-            ];
-
-            const ev = events[Math.floor(Math.random() * events.length)];
-            await ev.f();
-        }
-
-        // --- 5. 升降級與 UI (修正回傳 Promise 以免卡死) ---
-        async function upgradeLogic(p, reason) {
-            if(p.dice === 15) { victory(p); return true; }
-            const nextLv = { 4: 6, 6: 10, 10: 15 };
-            p.dice = nextLv[p.dice];
-            updateUI();
-            
-            return new Promise(resolve => {
-                showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${rankNames[p.dice]}】\n(骰子進化為 D${p.dice})`);
-                document.getElementById('close-btn').onclick = () => {
-                    document.getElementById('modal').style.display = 'none';
-                    resolve(false);
-                };
-            });
-        }
-
-        async function downgradeLogic(p) {
-            if(p.dice === 4) return;
-            const prevLv = { 15: 10, 10: 6, 6: 4 };
-            p.dice = prevLv[p.dice];
-            updateUI();
-            
-            return new Promise(resolve => {
-                showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${rankNames[p.dice]}】\n(骰子退化為 D${p.dice})`);
-                document.getElementById('close-btn').onclick = () => {
-                    document.getElementById('modal').style.display = 'none';
-                    resolve();
-                };
-            });
-        }
-
-        function nextTurn() {
-            isMoving = false;
-            currentPlayerIdx = 1 - currentPlayerIdx;
-            updateUI();
-        }
-
-        function updateUI() {
-            players.forEach((p, i) => {
-                const tag = document.getElementById(p.tag);
-                const rank = rankNames[p.dice];
-                tag.innerText = `P${p.id}: ${rank} (D${p.dice})`;
-                tag.classList.toggle('active', i === currentPlayerIdx);
-                
-                const statusEl = document.getElementById(`p${p.id}-status`);
-                statusEl.innerHTML = 
-                    p.skipTurns > 0 ? `<span class="status-badge">社區服務</span>` : 
-                    (p.fixedSteps > 0 ? `<span class="status-badge">累累病</span>` : "");
-                
-                document.getElementById(p.token).classList.toggle('mini', p.skipTurns > 0);
-            });
-            document.getElementById('status-bar').innerText = `輪到 玩家 ${players[currentPlayerIdx].id}`;
-        }
-
-        function updateTokens() {
-            players.forEach(p => {
-                const cell = document.getElementsByClassName('cell')[p.pos];
-                const boardRect = document.getElementById('game-container').getBoundingClientRect();
-                const rect = cell.getBoundingClientRect();
-                const el = document.getElementById(p.token);
-                const offset = p.id === 1 ? -6 : 6;
-                el.style.left = (rect.left - boardRect.left + rect.width/2 - 16 + offset) + 'px';
-                el.style.top = (rect.top - boardRect.top + rect.height/2 - 16 + offset) + 'px';
-            });
-        }
-
-        function showModal(t, img, txt) {
-            document.getElementById('modal-title').innerText = t;
-            const imgEl = document.getElementById('modal-img');
-            if(img) { imgEl.src = img; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; }
+        function show(title, img, txt, cb) {
+            document.getElementById('modal-title').innerText = title;
+            const im = document.getElementById('modal-img');
+            if(img) { im.src = img; im.style.display = 'block'; } else { im.style.display = 'none'; }
             document.getElementById('modal-text').innerText = txt;
             document.getElementById('modal').style.display = 'flex';
+            document.getElementById('close-btn').onclick = () => {
+                document.getElementById('modal').style.display = 'none';
+                if(cb) cb();
+            };
         }
 
-        function victory(p) {
-            confetti({ particleCount: 300, spread: 150, origin: { y: 0.6 } });
-            showModal("🎊 終極大驚喜 🎊", "", `玩家 ${p.id} 成為無所不能的寸神！\n希望你玩得開心，生日快樂！💖`);
-            document.getElementById('dice-btn').style.pointerEvents = 'none';
-            document.getElementById('close-btn').innerText = "再玩一次";
-            document.getElementById('close-btn').onclick = () => location.reload();
+        function endTurn() {
+            busy = false;
+            turn = 1 - turn;
+            refresh();
         }
 
-        document.getElementById('reset-btn').onclick = () => { if(confirm("確定重啟？")) location.reload(); };
-        initBoard();
-        window.onresize = updateTokens;
+        function refresh() {
+            players.forEach((p, i) => {
+                const tag = document.getElementById(p.tag);
+                tag.innerText = `P${p.id}: ${rankNames[p.dice]} (D${p.dice})`;
+                tag.className = `p-tag ${i===0?'p1-active':'p2-active'} ${i===turn?'active':''}`;
+                const cell = document.getElementsByClassName('cell')[p.pos];
+                const br = document.getElementById('game-container').getBoundingClientRect();
+                const cr = cell.getBoundingClientRect();
+                const el = document.getElementById(p.token);
+                el.style.left = (cr.left - br.left + cr.width/2 - 15 + (p.id===1?-5:5)) + 'px';
+                el.style.top = (cr.top - br.top + cr.height/2 - 15 + (p.id===1?-5:5)) + 'px';
+            });
+            document.getElementById('status-bar').innerText = `輪到 玩家 ${players[turn].id}`;
+        }
+
+        init();
+        window.onresize = refresh;
     </script>
 </body>
 </html>
