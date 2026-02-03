@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>回憶大富翁 - 生日驚喜 Vibe 版</title>
+    <title>小寸對決</title>
     <style>
         :root { --p1-color: #ff85a2; --p2-color: #4cc9f0; --accent-color: #f72585; --bg-color: #fff5f7; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -42,10 +42,10 @@
 </head>
 <body>
 
-    <div id="status-bar">準備好開始回憶了嗎？</div>
+    <div id="status-bar">準備好開始了嗎？</div>
     <div id="player-info">
-        <div id="p1-tag" class="p-tag p1-active active">P1: D4 <span id="p1-status"></span></div>
-        <div id="p2-tag" class="p-tag p2-active">P2: D4 <span id="p2-status"></span></div>
+        <div id="p1-tag" class="p-tag p1-active active">P1: 小寸子 (D4) <span id="p1-status"></span></div>
+        <div id="p2-tag" class="p-tag p2-active">P2: 小寸子 (D4) <span id="p2-status"></span></div>
     </div>
 
     <div id="game-container">
@@ -167,7 +167,7 @@
         function handleLanding(p) {
             const type = layout[p.pos];
             if(type === 'U') {
-                upgradeLogic(p, "踩到升級格！").then(win => { if(!win) nextTurn(); });
+                upgradeLogic(p, "升植！").then(win => { if(!win) nextTurn(); });
             } else if(type === 'S') {
                 triggerRandomEvent(p);
             } else if(document.getElementsByClassName('cell')[p.pos].dataset.mIdx !== undefined) {
@@ -238,20 +238,49 @@
         }
 
         // --- 5. 升降級與 UI ---
+        // 建立一個階級對照表
+        const rankNames = {
+            4: "小寸子",
+            6: "寸植",
+            10: "大植",
+            15: "實習寸神"
+        };
+
         async function upgradeLogic(p, reason) {
+            // 如果已經是實習寸神，再次升級就勝利
             if(p.dice === 15) { victory(p); return true; }
-            const lv = { 4: 6, 6: 10, 10: 15 };
-            p.dice = lv[p.dice];
+            
+            const nextLv = { 4: 6, 6: 10, 10: 15 };
+            p.dice = nextLv[p.dice];
+            const newRank = rankNames[p.dice];
+            
             updateUI();
-            showModal("LEVEL UP!", "", `${reason}\n骰子進化為 D${p.dice}！`);
-            document.getElementById('close-btn').onclick = () => document.getElementById('modal').style.display = 'none';
+            
+            // 顯示升級文字
+            showModal("升職咯！✨", "", `${reason}\n恭喜！你已升至【${newRank}】\n(骰子進化為 D${p.dice})`);
+            
+            document.getElementById('close-btn').onclick = () => {
+                document.getElementById('modal').style.display = 'none';
+            };
             return false;
         }
 
         async function downgradeLogic(p) {
-            const lv = { 15: 10, 10: 6, 6: 4, 4: 4 };
-            p.dice = lv[p.dice];
+            // 如果已經是最低階，就不再降級
+            if(p.dice === 4) return;
+            
+            const prevLv = { 15: 10, 10: 6, 6: 4 };
+            p.dice = prevLv[p.dice];
+            const newRank = rankNames[p.dice];
+            
             updateUI();
+            
+            // 降級通常伴隨隨機事件，顯示提示讓玩家知道慘了
+            showModal("歐布！😩", "", `由於意外耽誤...\n你被降成【${newRank}】\n(骰子退化為 D${p.dice})`);
+            
+            document.getElementById('close-btn').onclick = () => {
+                document.getElementById('modal').style.display = 'none';
+            };
         }
 
         function nextTurn() {
@@ -263,7 +292,8 @@
         function updateUI() {
             players.forEach((p, i) => {
                 const tag = document.getElementById(p.tag);
-                tag.innerText = `P${p.id}: D${p.dice}`;
+                const rank = rankNames[p.dice]; // 取得稱號
+                tag.innerText = `P${p.id}: ${rank} (D${p.dice})`;
                 tag.classList.toggle('active', i === currentPlayerIdx);
                 document.getElementById(`p${p.id}-status`).innerHTML = 
                     p.skipTurns > 0 ? `<span class="status-badge">社區服務</span>` : 
@@ -295,7 +325,7 @@
 
         function victory(p) {
             confetti({ particleCount: 300, spread: 150, origin: { y: 0.6 } });
-            showModal("🎊 終極大驚喜 🎊", "", `玩家 ${p.id} 完成了 D15 終極升級！\n妳是這段旅程最美的風景，生日快樂！💖`);
+            showModal("🎊 終極大驚喜 🎊", "", `玩家 ${p.id} 成為無所不能的寸神！\n希望你玩得開心，生日快樂！💖`);
             document.getElementById('dice-btn').style.pointerEvents = 'none';
             document.getElementById('close-btn').innerText = "再玩一次";
             document.getElementById('close-btn').onclick = () => location.reload();
