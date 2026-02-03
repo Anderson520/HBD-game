@@ -172,7 +172,7 @@
                 triggerRandomEvent(p);
             } else if(document.getElementsByClassName('cell')[p.pos].dataset.mIdx !== undefined) {
                 const idx = document.getElementsByClassName('cell')[p.pos].dataset.mIdx;
-                showModal("那一年...", mapPhotos[idx], mapTexts[idx]);
+                showModal("我們一起...", mapPhotos[idx], mapTexts[idx]);
                 document.getElementById('close-btn').onclick = () => { document.getElementById('modal').style.display = 'none'; nextTurn(); };
             } else {
                 nextTurn();
